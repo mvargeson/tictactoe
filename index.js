@@ -1,9 +1,34 @@
 const readline = require('readline');
 
-class Game {
+class Board {
   constructor() {
-    // factor out board into separate class
     this.board = [...new Array(9)].map((_, i) => i + 1);
+  }
+
+  isOpen() {
+    // check if game is not won
+    return true;
+  }
+
+  play(square, player) {
+    const i = square - 1;
+    if (this.board[i] === 'X' || this.board[i] === 'O') return false; // already played
+    if (square < 1 || square > 9) return false; // out of bounds
+
+    this.board[i] = player === 0 ? 'X' : 'O';
+    return true;
+  }
+
+  render() {
+    for(let i = 0; i < 9; i += 3) {
+      process.stdout.write(`${this.board.slice(i, i + 3).join(' | ')}\n`);
+    }
+  }
+}
+
+class Game {
+  constructor(Board) {
+    this.board = new Board();
     this.turn = 0;
 
     this.rl = readline.createInterface({
@@ -13,13 +38,8 @@ class Game {
     });
   }
 
-  play(n) {
-    const i = n - 1;
-    if (this.board[i] === 'X' || this.board[i] === 'O') return false; // already played
-    if (n < 1 || n > 9) return false; // out of bounds
-
-    this.board[i] = this.turn % 2 === 0 ? 'X' : 'O';
-    return true;
+  get player() {
+    return this.turn % 2;
   }
 
   invalidMove() {
@@ -28,14 +48,16 @@ class Game {
 
   listen() {
     this.rl.on('line', (line) => {
-      line = line.trim();
+      const square = line.trim();
 
-      if (this.play(line)) {
+      if (this.board.play(square, this.player)) {
         this.turn++;
         this.render();
       } else {
         this.invalidMove();
       }
+
+      if(!this.board.isOpen()) this.stop();
 
       this.rl.prompt();
     }).on('close', this.stop);
@@ -53,12 +75,10 @@ class Game {
   }
 
   render() {
-    for(let i = 0; i < 9; i += 3) {
-      process.stdout.write(`${this.board.slice(i, i + 3).join(' | ')}\n`);
-    }
+    this.board.render();
     process.stdout.write(`Player ${(this.turn % 2) + 1}'s Turn\n`);
   }
 }
 
-const g = new Game();
+const g = new Game(Board);
 g.start();
